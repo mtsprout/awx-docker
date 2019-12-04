@@ -1,0 +1,102 @@
+version: '3'
+services:
+
+  web:
+    image: ansible/awx_web:6.1.0
+    container_name: awx_web
+    depends_on:
+      - rabbitmq
+      - memcached
+      - postgres
+    ports:
+      - "8080:8052"
+    hostname: awxweb
+    user: root
+    restart: unless-stopped
+    volumes:
+      - "/var/lib/awx/SECRET_KEY:/etc/tower/SECRET_KEY"
+      - "/var/lib/awx/environment.sh:/etc/tower/conf.d/environment.sh"
+      - "/var/lib/awx/credentials.py:/etc/tower/conf.d/credentials.py"
+      - "/var/lib/awx/projects:/var/lib/awx/projects:rw"
+    environment:
+      http_proxy: 
+      https_proxy: 
+      no_proxy: 
+    networks:
+      - net
+      - traefik-public
+    
+
+  task:
+    image: ansible/awx_task:6.1.0
+    container_name: awx_task
+    depends_on:
+      - rabbitmq
+      - memcached
+      - web
+      - postgres
+    hostname: awx
+    user: root
+    restart: unless-stopped
+    volumes:
+      - "/var/lib/awx/SECRET_KEY:/etc/tower/SECRET_KEY"
+      - "/var/lib/awx/environment.sh:/etc/tower/conf.d/environment.sh"
+      - "/var/lib/awx/credentials.py:/etc/tower/conf.d/credentials.py"
+      - "/var/lib/awx/projects:/var/lib/awx/projects:rw"
+    environment:
+      http_proxy: 
+      https_proxy: 
+      no_proxy: 
+    networks:
+      - net
+
+  rabbitmq:
+    image: ansible/awx_rabbitmq:3.7.4
+    container_name: awx_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "awx"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "equoYeid7o"
+      RABBITMQ_ERLANG_COOKIE: cookiemonster
+      http_proxy: 
+      https_proxy: 
+      no_proxy: 
+    networks:
+      - net
+
+  memcached:
+    image: "memcached:alpine"
+    container_name: awx_memcached
+    restart: unless-stopped
+    environment:
+      http_proxy: 
+      https_proxy: 
+      no_proxy: 
+    networks:
+      - net
+      - traefik-public
+
+
+  postgres:
+    image: postgres:9.6
+    container_name: awx_postgres
+    restart: unless-stopped
+    volumes:
+      - /var/lib/pgdocker:/var/lib/postgresql/data:Z
+    environment:
+      POSTGRES_USER: awx
+      POSTGRES_PASSWORD: ofei0Oofoo
+      POSTGRES_DB: awx
+      PGDATA: /var/lib/postgresql/data/pgdata
+      http_proxy: 
+      https_proxy: 
+      no_proxy: 
+    networks:
+      - net
+
+networks:
+  net:
+    external: false
+  traefik-public:
+    external: true
